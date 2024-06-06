@@ -1,4 +1,4 @@
-var preciosSupermercados = {
+const preciosSupermercados = {
     "Carrefour": {
         aceite: 1649,
         fideos: 1350,
@@ -85,15 +85,23 @@ var preciosSupermercados = {
     }
 };
 
-function encontrarPrecioMasBajo(producto) {
-    var supermercadoMasBarato = "";
-    var precioMasBajo = Infinity;
-    var precios = [];
+function normalizarProducto(producto) {
+    producto = producto.toLowerCase();
+    if (producto.endsWith('s')) {
+        producto = producto.slice(0, -1);
+    }
+    return producto;
+}
 
-    for (var supermercado in preciosSupermercados) {
-        var precio = preciosSupermercados[supermercado][producto.toLowerCase()];
+function encontrarPrecioMasBajo(producto) {
+    let supermercadoMasBarato = "";
+    let precioMasBajo = Infinity;
+    const precios = [];
+
+    for (const supermercado in preciosSupermercados) {
+        const precio = preciosSupermercados[supermercado][producto];
         if (precio !== undefined) {
-            precios.push({ supermercado: supermercado, precio: precio });
+            precios.push({ supermercado, precio });
             if (precio < precioMasBajo) {
                 supermercadoMasBarato = supermercado;
                 precioMasBajo = precio;
@@ -102,33 +110,54 @@ function encontrarPrecioMasBajo(producto) {
     }
 
     return {
-        supermercadoMasBarato: supermercadoMasBarato,
-        precioMasBajo: precioMasBajo,
-        precios: precios
+        supermercadoMasBarato,
+        precioMasBajo,
+        precios
     };
 }
 
-function compararPrecios() {
-    while (true) {
-        var producto = prompt("Si quieres salir, escribe 'Salir'. De lo contrario, ingresa el nombre del producto para comparar precios:");
-        if (producto.toLowerCase() === "salir") {
-            alert("¡Esperamos que regreses pronto!");
-            break;
-        } else if (!producto) {
-            alert("No ingresaste ningún producto.");
-        } else {
-            var resultado = encontrarPrecioMasBajo(producto.toLowerCase());
-            if (resultado.supermercadoMasBarato) {
-                var mensaje = "El precio más bajo para " + producto + " se encuentra en " + resultado.supermercadoMasBarato + " y es de $" + resultado.precioMasBajo.toFixed(2) + ".\n\nComparación de precios:\n";
-                for (var i = 0; i < resultado.precios.length; i++) {
-                    mensaje += resultado.precios[i].supermercado + ": $" + resultado.precios[i].precio.toFixed(2) + "\n";
-                }
-                alert(mensaje);
-            } else {
-                alert("Lo siento, no se encontró información para " + producto + " en ningún supermercado.");
-            }
-        }
+function mostrarResultado(resultado, producto) {
+    const mensajeDiv = document.getElementById("mensaje");
+    let mensaje = "";
+
+    if (resultado.supermercadoMasBarato) {
+        mensaje += `El precio más bajo para ${producto} se encuentra en ${resultado.supermercadoMasBarato} y es de $${resultado.precioMasBajo.toFixed(2)}.\n\nComparación de precios:\n`;
+        resultado.precios.forEach(precio => {
+            mensaje += `${precio.supermercado}: $${precio.precio.toFixed(2)}\n`;
+        });
+    } else {
+        mensaje += `Lo siento, no se encontró información para ${producto} en ningún supermercado.`;
     }
+
+    mensajeDiv.textContent = mensaje;
+    document.getElementById("resultado").style.display = "block";
 }
 
-compararPrecios();
+document.getElementById("compararButton").addEventListener("click", function() {
+    let producto = document.getElementById("productoInput").value;
+    if (!producto) {
+        document.getElementById("mensaje").textContent = "No ingresaste ningún producto.";
+        document.getElementById("resultado").style.display = "block";
+        return;
+    }
+
+    producto = normalizarProducto(producto);
+    const resultado = encontrarPrecioMasBajo(producto);
+    mostrarResultado(resultado, producto);
+
+    localStorage.setItem('ultimaComparacion', JSON.stringify({ producto, resultado }));
+});
+
+document.getElementById("productoInput").addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+        document.getElementById("compararButton").click();
+    }
+});
+
+window.addEventListener("load", function() {
+    const ultimaComparacion = JSON.parse(localStorage.getItem('ultimaComparacion'));
+    if (ultimaComparacion) {
+        const { producto, resultado } = ultimaComparacion;
+        mostrarResultado(resultado, producto);
+    }
+});

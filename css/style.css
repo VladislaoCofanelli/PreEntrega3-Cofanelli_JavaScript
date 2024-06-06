@@ -29,3 +29,22 @@ h1 {
 .productos-disponibles ul li {
     margin-bottom: 5px;
 }
+
+.comparar-precios {
+    margin-top: 20px;
+}
+
+#resultado {
+    margin-top: 20px;
+    display: none;
+}
+
+.resultado p {
+    margin-bottom: 20px;
+    white-space: pre-line;
+    text-align: left;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
