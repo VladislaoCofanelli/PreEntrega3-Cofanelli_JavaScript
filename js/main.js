@@ -1,89 +1,58 @@
-const preciosSupermercados = {
-    "Carrefour": {
-        aceite: 1649,
-        fideos: 1350,
-        arroz: 1370,
-        harina: 805,
-        avena: 2895,
-        atun: 1791,
-        sal: 885,
-        gelatina: 535,
-        miel: 2861.80,
-        te: 1299,
-        cafe: 2700,
-        azucar: 940,
-        cereales: 3085,
-        chocolate: 1235,
-        vino: 3219.33,
-        gin: 9500,
-        pan: 480,
-        leche: 1300,
-        yogurt: 890,
-        huevos: 3400,
-        queso: 2150,
-        manzanas: 700,
-        papas: 500,
-        tomates: 900,
-        zanahorias: 600,
-        pollo: 1500
-    },
-    "Walmart": {
-        aceite: 1856,
-        fideos: 741,
-        arroz: 1999,
-        harina: 1389,
-        avena: 3409.52,
-        atun: 1972,
-        sal: 593,
-        gelatina: 399,
-        miel: 5189.18,
-        te: 1499.25,
-        cafe: 2123.23,
-        azucar: 1149,
-        cereales: 1021,
-        chocolate: 3207,
-        vino: 3600,
-        gin: 7124.25,
-        pan: 420,
-        leche: 1350,
-        yogurt: 870,
-        huevos: 3200,
-        queso: 2100,
-        manzanas: 750,
-        papas: 550,
-        tomates: 950,
-        zanahorias: 620,
-        pollo: 1550
-    },
-    "Disco": {
-        aceite: 2752,
-        fideos: 1367,
-        arroz: 1600,
-        harina: 840,
-        avena: 3150,
-        atun: 3689,
-        sal: 1025,
-        gelatina: 786,
-        miel: 5600,
-        te: 1344,
-        cafe: 4600,
-        azucar: 1337,
-        cereales: 1050,
-        chocolate: 2105.35,
-        vino: 4200,
-        gin: 29050,
-        pan: 550,
-        leche: 1400,
-        yogurt: 920,
-        huevos: 3500,
-        queso: 2250,
-        manzanas: 720,
-        papas: 520,
-        tomates: 930,
-        zanahorias: 630,
-        pollo: 1520
-    }
+const API_KEY = '2e49aa69famsh9cdb61f3637fdffp170c5ejsnfa8d6289ab6c';
+const API_HOST = 'uk-supermarkets-product-pricing.p.rapidapi.com';
+
+const productos = {
+    "aceite": "5449000130389",
+    "fideos": "1234567890123",
+    "arroz": "7891011121314",
+    "harina": "1617181920212",
+    "avena": "2324252627283",
+    "atún": "3456789012345",
+    "sal": "4567890123456",
+    "gelatina": "5678901234567",
+    "miel": "6789012345678",
+    "té": "7890123456789",
+    "café": "8901234567890",
+    "azúcar": "9012345678901",
+    "cereales": "1234567890111",
+    "chocolate": "2345678901222",
+    "vino": "3456789012333",
+    "gin": "4567890123444",
+    "pan": "5678901234555",
+    "leche": "6789012345666",
+    "yogur": "7890123456777",
+    "huevos": "8901234567888",
+    "queso": "9012345678999",
+    "manzanas": "1123456789000",
+    "papas": "2234567890111",
+    "tomates": "3345678901222",
+    "zanahorias": "4456789012333",
+    "pollo": "5567890123444"
 };
+
+async function obtenerDatosProducto(barcode) {
+    const url = `https://${API_HOST}/product_prices_stores?barcode=${barcode}`;
+    const options = {
+        method: 'GET',
+        headers: {
+            'x-rapidapi-key': API_KEY,
+            'x-rapidapi-host': API_HOST
+        }
+    };
+
+    try {
+        const response = await fetch(url, options);
+        const data = await response.json();
+        if (data && data.length > 0) {
+            return data;
+        } else {
+            throw new Error('No se encontraron datos para el código de barras proporcionado.');
+        }
+    } catch (error) {
+        console.error('Error al obtener los datos de la API:', error);
+        return null;
+    }
+}
 
 function normalizarProducto(producto) {
     producto = producto.toLowerCase();
@@ -93,21 +62,20 @@ function normalizarProducto(producto) {
     return producto;
 }
 
-function encontrarPrecioMasBajo(producto) {
+function encontrarPrecioMasBajo(datos) {
     let supermercadoMasBarato = "";
     let precioMasBajo = Infinity;
     const precios = [];
 
-    for (const supermercado in preciosSupermercados) {
-        const precio = preciosSupermercados[supermercado][producto];
-        if (precio !== undefined) {
-            precios.push({ supermercado, precio });
-            if (precio < precioMasBajo) {
-                supermercadoMasBarato = supermercado;
-                precioMasBajo = precio;
-            }
+    datos.forEach(item => {
+        const { store, price } = item;
+        const precio = parseFloat(price);
+        precios.push({ supermercado: store, precio });
+        if (precio < precioMasBajo) {
+            supermercadoMasBarato = store;
+            precioMasBajo = precio;
         }
-    }
+    });
 
     return {
         supermercadoMasBarato,
@@ -133,7 +101,7 @@ function mostrarResultado(resultado, producto) {
     document.getElementById("resultado").style.display = "block";
 }
 
-document.getElementById("compararButton").addEventListener("click", function() {
+document.getElementById("compararButton").addEventListener("click", async function() {
     let producto = document.getElementById("productoInput").value;
     if (!producto) {
         document.getElementById("mensaje").textContent = "No ingresaste ningún producto.";
@@ -142,10 +110,22 @@ document.getElementById("compararButton").addEventListener("click", function() {
     }
 
     producto = normalizarProducto(producto);
-    const resultado = encontrarPrecioMasBajo(producto);
-    mostrarResultado(resultado, producto);
+    const barcode = productos[producto];
+    if (!barcode) {
+        document.getElementById("mensaje").textContent = "Producto no encontrado.";
+        document.getElementById("resultado").style.display = "block";
+        return;
+    }
 
-    localStorage.setItem('ultimaComparacion', JSON.stringify({ producto, resultado }));
+    const datosProducto = await obtenerDatosProducto(barcode);
+    if (datosProducto) {
+        const resultado = encontrarPrecioMasBajo(datosProducto);
+        mostrarResultado(resultado, producto);
+        localStorage.setItem('ultimaComparacion', JSON.stringify({ producto, resultado }));
+    } else {
+        document.getElementById("mensaje").textContent = "Error al obtener los datos del producto.";
+        document.getElementById("resultado").style.display = "block";
+    }
 });
 
 document.getElementById("productoInput").addEventListener("keydown", function(event) {
